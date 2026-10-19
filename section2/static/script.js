@@ -43,19 +43,19 @@ async function request(method, url, body) {
   return data;
 }
 
-// ---------- Error areas ----------
+// ---------- Alerts (error and success) ----------
 
-function showError(box, message) {
+function showAlert(box, message) {
   box.querySelector(".alert-message").textContent = message;
   box.hidden = false;
 }
 
-function hideError(box) {
+function hideAlert(box) {
   box.hidden = true;
 }
 
 document.querySelectorAll(".alert-close").forEach((button) => {
-  button.addEventListener("click", () => hideError(button.closest(".alert")));
+  button.addEventListener("click", () => hideAlert(button.closest(".alert")));
 });
 
 // ---------- List ----------
@@ -69,7 +69,7 @@ async function loadItems() {
     const items = await request("GET", query ? `${API}?${query}` : API);
     renderItems(items);
   } catch (error) {
-    showError($("error"), error.message);
+    showAlert($("error"), error.message);
   }
 }
 
@@ -95,9 +95,13 @@ function renderItems(items) {
   const typeLabel = { "": "items", book: "books", dvd: "DVDs" }[state.type];
   $("list-title").textContent = state.availableOnly ? `Available ${typeLabel}` : `All ${typeLabel}`;
 
-  const availableCount = items.filter((item) => item.is_available).length;
-  $("available-count").textContent = `${availableCount} available`;
-  $("checked-out-count").textContent = `${count - availableCount} checked out`;
+  // Only meaningful for the full list; a filtered list would give misleading counts.
+  $("status-summary").hidden = Boolean(filtered);
+  if (!filtered) {
+    const availableCount = items.filter((item) => item.is_available).length;
+    $("available-count").textContent = `${availableCount} available`;
+    $("checked-out-count").textContent = `${count - availableCount} checked out`;
+  }
   $("footer-text").textContent = `You’re all caught up. ${count === 1 ? "1 item is" : `All ${count} items are`} shown.`;
 
   $("grid").replaceChildren(...items.map(renderCard));
@@ -134,11 +138,13 @@ function renderCard(item) {
 }
 
 async function runAction(method, url) {
-  hideError($("error"));
+  hideAlert($("error"));
+  hideAlert($("success"));
   try {
-    await request(method, url);
+    const result = await request(method, url);
+    if (result?.message) showAlert($("success"), result.message);
   } catch (error) {
-    showError($("error"), error.message);
+    showAlert($("error"), error.message);
   }
   await loadItems();
 }
@@ -173,7 +179,7 @@ function updateTypeFields() {
 
 function openModal(item = null) {
   state.editingItem = item;
-  hideError($("form-error"));
+  hideAlert($("form-error"));
   $("modal-title").textContent = item ? "Edit Item" : "Add Item";
   $("field-title").value = item ? item.title : "";
   $("field-author").value = item ? item.author : "";
@@ -206,7 +212,7 @@ document.addEventListener("keydown", (event) => {
 
 $("item-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  hideError($("form-error"));
+  hideAlert($("form-error"));
 
   const type = $("field-type").value;
   const number = $("field-number").value.trim();
@@ -226,7 +232,7 @@ $("item-form").addEventListener("submit", async (event) => {
     closeModal();
     await loadItems();
   } catch (error) {
-    showError($("form-error"), error.message);
+    showAlert($("form-error"), error.message);
   }
 });
 

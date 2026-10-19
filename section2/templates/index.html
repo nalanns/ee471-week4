@@ -70,10 +70,16 @@
       <button type="button" class="alert-close" aria-label="Close"><svg class="icon"><use href="#icon-x"/></svg></button>
     </div>
 
+    <div class="alert alert-success" id="success" role="status" hidden>
+      <svg class="icon"><use href="#icon-check"/></svg>
+      <span class="alert-message"></span>
+      <button type="button" class="alert-close" aria-label="Close"><svg class="icon"><use href="#icon-x"/></svg></button>
+    </div>
+
     <div id="list-section" hidden>
       <div class="list-head">
         <h2 id="list-title">All items</h2>
-        <span class="muted"><span class="dot dot-green"></span><span id="available-count"></span> · <span id="checked-out-count"></span></span>
+        <span class="muted" id="status-summary"><span class="dot dot-green"></span><span id="available-count"></span> · <span id="checked-out-count"></span></span>
       </div>
       <div class="grid" id="grid"></div>
       <p class="footer-note"><svg class="icon"><use href="#icon-check"/></svg> <span id="footer-text"></span></p>

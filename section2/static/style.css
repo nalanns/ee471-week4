@@ -126,7 +126,8 @@ h1 { font-size: 32px; font-weight: 700; margin-bottom: 6px; }
   border-radius: 8px; background: var(--red-bg); color: var(--red); font-size: 14px;
 }
 .alert-message { flex: 1; }
-.alert-close { border: none; background: none; color: var(--red); padding: 2px; display: grid; }
+.alert-close { border: none; background: none; color: inherit; padding: 2px; display: grid; }
+.alert-success { background: var(--green-bg); color: var(--green); }
 
 /* List */
 .list-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
