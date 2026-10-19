@@ -123,7 +123,7 @@ class LibraryCollection:
         if item_type is not None and item_type not in self.ITEM_TYPES:
             raise ValueError(f"Invalid item_type '{item_type}'. Use one of: {', '.join(self.ITEM_TYPES)}.")
         if available is not None and not isinstance(available, bool):
-            raise ValueError("available must be True, False or None.")
+            raise ValueError("available must be true or false.")
         result = self.items
         if available is not None:
             result = [item for item in result if item.is_available == available]
@@ -135,21 +135,60 @@ class LibraryCollection:
         """Return the titles of all items that are currently available."""
         return [item.title for item in self.list_items(available=True)]
 
+    @staticmethod
+    def _clean_value(name, value):
+        """Return the cleaned value of an editable field, or raise ValueError if it is invalid."""
+        if name in ("title", "author"):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be a non-empty string.")
+            return value.strip()
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError(f"{name} must be a positive integer.")
+        return value
+
+    def create_item(self, data):
+        """Build a Book or DVD from a dict with type, title, author and page_count or duration, add it and return it."""
+        if not isinstance(data, dict):
+            raise ValueError("Item data must be an object.")
+        classes = {"book": Book, "dvd": DVD}
+        item_type = data.get("type")
+        if item_type not in classes:
+            raise ValueError(f"type must be one of: {', '.join(classes)}.")
+        item_class = classes[item_type]
+        fields = {name: value for name, value in data.items() if name != "type"}
+        unknown = [name for name in fields if name not in item_class.EDITABLE_FIELDS]
+        if unknown:
+            raise ValueError(f"Field '{unknown[0]}' is not allowed on a {item_type}.")
+        missing = [name for name in item_class.EDITABLE_FIELDS if name not in fields]
+        if missing:
+            raise ValueError(f"Missing required field(s): {', '.join(missing)}.")
+        cleaned = {name: self._clean_value(name, value) for name, value in fields.items()}
+        item = item_class(**cleaned)
+        self.add_item(item)
+        return item
+
     def update_item(self, item_id, **fields):
         """Update the editable fields of an item and return it, or raise ValueError for invalid changes."""
         item = self.get_item(item_id)
+        if not fields:
+            raise ValueError("No fields to update.")
         # Validate every field first so a bad field leaves the item unchanged.
+        cleaned = {}
         for name, value in fields.items():
             if name not in item.EDITABLE_FIELDS:
                 raise ValueError(f"Field '{name}' cannot be updated on a {item.TYPE}.")
-            if name in ("title", "author"):
-                if not isinstance(value, str) or not value.strip():
-                    raise ValueError(f"{name} must be a non-empty string.")
-            elif isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-                raise ValueError(f"{name} must be a positive integer.")
-        for name, value in fields.items():
-            setattr(item, name, value.strip() if isinstance(value, str) else value)
+            cleaned[name] = self._clean_value(name, value)
+        for name, value in cleaned.items():
+            setattr(item, name, value)
         return item
+
+    def replace_item(self, item_id, **fields):
+        """Replace all editable fields of an item and return it, or raise ValueError if any is missing or invalid."""
+        item = self.get_item(item_id)
+        missing = [name for name in item.EDITABLE_FIELDS if name not in fields]
+        if missing:
+            raise ValueError(f"Missing required field(s): {', '.join(missing)}.")
+        return self.update_item(item_id, **fields)
 
     def remove_item(self, item_id):
         """Remove the item with the given id, or raise ItemStateError if it is checked out."""

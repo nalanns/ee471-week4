@@ -18,3 +18,25 @@ main.py:
 Create a LibraryCollection, add mixed Books and DVDs, and call every method once: add_item, get_item, list_items (no filter, available=True, item_type="dvd"), update_item, checkout (Book and DVD), return_item, remove_item, to_dict.
 Then trigger each exception inside try/except and print the message: ItemNotFoundError (get_item with a wrong id), ItemStateError (checkout twice, return an available item, remove a checked-out item), ValueError (update_item with id or is_available, invalid item_type filter).
 Also show that a removed id is not reused.
+
+Prompt2 - REST API
+Work only in section2/. Create app.py and requirements.txt (containing flask).
+
+Rules:
+- Routes in app.py only translate HTTP to LibraryCollection method calls. All validation and business rules stay in custom_classes.py. If something is missing there, add it to custom_classes.py:
+  - LibraryCollection.create_item(data) (or similar): builds a Book or DVD from a dict with type ("book"/"dvd"), title, author, page_count or duration; raises ValueError for missing/invalid fields or unknown type; adds it and returns the item.
+  - LibraryCollection.replace_item(item_id, **fields): like update_item but requires ALL editable fields for that item type (title, author, and page_count or duration); raises ValueError if any is missing.
+- One LibraryCollection instance, seeded with at least 3 items, mixed Books and DVDs, with at least one checked out.
+- Every response is JSON. Errors are {"error": "<message>"}. Map exceptions: ValueError -> 400, ItemNotFoundError -> 404, ItemStateError -> 409. Invalid or missing JSON body -> 400. Unknown routes and wrong methods also return JSON errors.
+
+Endpoints:
+- POST   /api/items                   -> 201 + new item (to_dict), 400
+- GET    /api/items                   -> 200 list; supports ?available=true|false and ?type=book|dvd; 400 for a bad filter value
+- GET    /api/items/<int:id>          -> 200 item, 404
+- PUT    /api/items/<int:id>          -> 200 item, 400, 404 (replace all editable fields)
+- PATCH  /api/items/<int:id>          -> 200 item, 400, 404 (change some editable fields)
+- DELETE /api/items/<int:id>          -> 204 empty body, 404, 409 if checked out
+- POST   /api/items/<int:id>/checkout -> 200 {"message": ..., "item": ...}, 404, 409 already out
+- POST   /api/items/<int:id>/return   -> 200 {"message": ..., "item": ...}, 404, 409 not checked out
+
+Run with app.run(debug=True, port=5000). Don't create any frontend yet.
