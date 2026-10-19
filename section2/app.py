@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 
 from custom_classes import Book, DVD, LibraryCollection, ItemNotFoundError, ItemStateError
@@ -39,6 +39,11 @@ def handle_state_error(error):
 @app.errorhandler(HTTPException)
 def handle_http_error(error):
     return jsonify(error=error.description), error.code
+
+
+@app.get("/")
+def index():
+    return render_template("index.html")
 
 
 @app.post("/api/items")
